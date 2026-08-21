@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Move Record — Condition Report Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#EFEBE1;
+    --paper-card:#FBF9F4;
+    --ink:#1F241F;
+    --ink-soft:#4B5248;
+    --line:#C9C2AE;
+    --stamp-green:#2B4C3F;
+    --stamp-green-dark:#1C332A;
+    --stamp-red:#A13D2B;
+    --stamp-red-dark:#7E2E20;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(31,36,31,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding: 32px 16px 80px;
+  }
+  .wrap{max-width:840px;margin:0 auto;}
+
+  header.masthead{
+    border-bottom:3px double var(--ink);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  header.masthead .title{
+    font-family:'Special Elite', monospace;
+    font-size:2.1rem;
+    letter-spacing:0.5px;
+    line-height:1.1;
+  }
+  header.masthead .tagline{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-top:6px;
+    max-width:340px;
+  }
+  header.masthead .fileno{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    text-align:right;
+    border:1px solid var(--line);
+    padding:8px 12px;
+    background:var(--paper-card);
+  }
+
+  section.panel{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    box-shadow: 3px 3px 0 rgba(31,36,31,0.06);
+    padding:24px;
+    margin-bottom:24px;
+  }
+  section.panel h2{
+    font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    font-size:0.82rem;
+    color:var(--stamp-green-dark);
+    margin:0 0 16px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media(max-width:560px){.field-grid{grid-template-columns:1fr;}}
+  label{
+    display:block;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  input[type=text], select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:0.92rem;
+    color:var(--ink);
+  }
+  input[type=text]:focus, select:focus{outline:2px solid var(--stamp-green); outline-offset:1px;}
+
+  .room-tabs{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
+  .room-tab{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.8rem;
+    padding:7px 13px;
+    border:1px solid var(--ink);
+    background:transparent;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .room-tab.active{background:var(--stamp-green); color:#fff; border-color:var(--stamp-green-dark);}
+  .room-tab .count{opacity:0.7; margin-left:5px;}
+  .add-room{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.8rem;
+    padding:7px 13px;
+    border:1px dashed var(--ink-soft);
+    background:transparent;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .add-room:hover{border-color:var(--ink); color:var(--ink);}
+
+  .upload-zone{
+    border:2px dashed var(--line);
+    padding:26px;
+    text-align:center;
+    background:repeating-linear-gradient(135deg, transparent, transparent 10px, rgba(31,36,31,0.02) 10px, rgba(31,36,31,0.02) 20px);
+  }
+  .upload-zone p{margin:0; font-size:0.85rem; color:var(--ink-soft);}
+  .upload-zone .big{font-family:'Special Elite', monospace; font-size:1rem; color:var(--ink); margin-bottom:4px;}
+  .upload-choices{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-top:16px;
+  }
+  input[type=file]{display:none;}
+
+  .photo-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+    gap:12px;
+    margin-top:18px;
+  }
+  .photo-card{
+    position:relative;
+    border:1px solid var(--line);
+    background:#fff;
+    overflow:hidden;
+  }
+  .photo-card img{width:100%; height:110px; object-fit:cover; display:block;}
+  .photo-card .stamp{
+    position:absolute;
+    bottom:5px;
+    left:5px;
+    background:rgba(255,255,255,0.92);
+    border:1px solid var(--stamp-red);
+    color:var(--stamp-red-dark);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.58rem;
+    padding:2px 5px;
+    letter-spacing:0.3px;
+  }
+  .photo-card .del{
+    position:absolute;
+    top:4px;
+    right:4px;
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    width:20px;
+    height:20px;
+    font-size:0.75rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .empty-note{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    padding:14px 0 0;
+  }
+
+  .generate-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+    padding-top:6px;
+  }
+  .summary{font-family:'IBM Plex Mono', monospace; font-size:0.78rem; color:var(--ink-soft);}
+  .summary strong{color:var(--ink);}
+  button.primary{
+    font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-size:0.82rem;
+    padding:13px 26px;
+    background:var(--stamp-green);
+    color:#fff;
+    border:1px solid var(--stamp-green-dark);
+    cursor:pointer;
+  }
+  button.primary:hover{background:var(--stamp-green-dark);}
+  button.primary:disabled{background:#B7B39F; border-color:#B7B39F; cursor:not-allowed;}
+
+  .unlock-panel{
+    border:1px solid var(--stamp-red);
+    background:#FBF3EF;
+    padding:18px 20px;
+    margin-top:16px;
+  }
+  .unlock-panel.is-unlocked{
+    border-color:var(--stamp-green);
+    background:#F0F4F1;
+  }
+  .unlock-panel .status{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    color:var(--stamp-red-dark);
+    margin:0 0 12px;
+  }
+  .unlock-panel.is-unlocked .status{color:var(--stamp-green-dark);}
+  .unlock-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .unlock-row input[type=text]{
+    max-width:180px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  button.secondary{
+    font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-size:0.78rem;
+    padding:11px 18px;
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--ink);
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-block;
+  }
+  button.secondary:hover{background:var(--ink); color:#fff;}
+
+  footer{
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.7rem;
+    color:var(--ink-soft);
+    margin-top:36px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <div class="title">Move Record</div>
+      <div class="tagline">Photograph every room, get a dated PDF report. Proof, before there's a dispute.</div>
+    </div>
+    <div class="fileno" id="fileNo">FILE NO. —</div>
+  </header>
+
+  <section class="panel">
+    <h2>Report details</h2>
+    <div class="field-grid">
+      <div>
+        <label for="tenantName">Your name</label>
+        <input type="text" id="tenantName" placeholder="Jordan Ellis">
+      </div>
+      <div>
+        <label for="address">Property address</label>
+        <input type="text" id="address" placeholder="123 Maple St, Apt 4B">
+      </div>
+      <div>
+        <label for="reportType">Report type</label>
+        <select id="reportType">
+          <option value="Move-In">Move-In Condition</option>
+          <option value="Move-Out">Move-Out Condition</option>
+        </select>
+      </div>
+      <div>
+        <label for="reportDate">Date</label>
+        <input type="text" id="reportDate" placeholder="auto-filled">
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Rooms &amp; photos</h2>
+    <div class="room-tabs" id="roomTabs"></div>
+
+    <div class="upload-zone" id="uploadZone">
+      <p class="big">+ Add photos</p>
+      <p>Choose photos for the selected room. Each one gets logged with the date and time.</p>
+      <div class="upload-choices">
+        <button type="button" class="secondary" id="takePhotoBtn">Take a photo</button>
+        <button type="button" class="secondary" id="chooseFileBtn">Choose from library</button>
+      </div>
+    </div>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple style="display:none;">
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+
+    <div class="photo-grid" id="photoGrid"></div>
+    <p class="empty-note" id="emptyNote"></p>
+  </section>
+
+  <section class="panel">
+    <h2>Generate report</h2>
+    <div class="generate-bar">
+      <div class="summary" id="summary"><strong>0</strong> photos across <strong>0</strong> rooms logged.</div>
+      <button class="primary" id="generateBtn" disabled>Download PDF report</button>
+    </div>
+
+    <div class="unlock-panel" id="unlockPanel" style="display:none;">
+      <p class="status" id="unlockStatus">Locked — a one-time $5 unlock is required to download the finished report.</p>
+      <div class="unlock-row">
+        <a class="secondary" id="buyLink" href="#" target="_blank" rel="noopener">Buy access — $5</a>
+        <input type="text" id="codeInput" placeholder="Enter code">
+        <button class="secondary" id="unlockBtn">Unlock</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>No account, no upload to any server — everything happens on this device.</footer>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — edit these two lines, nothing else, to go live.
+   ============================================================
+   1) PAYMENT_LINK: paste your product URL here — works with
+      Gumroad, Selar, or any similar platform.
+   2) ACCESS_CODE:  must exactly match the code your platform
+      delivers automatically after purchase (as a text file or
+      text content).
+   ============================================================ */
+const PAYMENT_LINK = 'https://selar.com/13w7011nl8';
+const ACCESS_CODE = 'MOVE2026';
+/* ============================================================ */
+
+const DEFAULT_ROOMS = ["Kitchen","Bathroom","Bedroom","Living Room","Entryway"];
+let rooms = {};
+DEFAULT_ROOMS.forEach(r => rooms[r] = []);
+let activeRoom = DEFAULT_ROOMS[0];
+
+const roomTabs = document.getElementById('roomTabs');
+const photoGrid = document.getElementById('photoGrid');
+const emptyNote = document.getElementById('emptyNote');
+const summary = document.getElementById('summary');
+const generateBtn = document.getElementById('generateBtn');
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+const fileNo = document.getElementById('fileNo');
+const reportDateInput = document.getElementById('reportDate');
+
+const now = new Date();
+reportDateInput.value = now.toLocaleDateString(undefined, {year:'numeric',month:'long',day:'numeric'});
+fileNo.textContent = 'FILE NO. ' + now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + Math.floor(Math.random()*900+100);
+
+function renderTabs(){
+  roomTabs.innerHTML = '';
+  Object.keys(rooms).forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'room-tab' + (name === activeRoom ? ' active' : '');
+    btn.innerHTML = name + '<span class="count">(' + rooms[name].length + ')</span>';
+    btn.onclick = () => { activeRoom = name; renderTabs(); renderPhotos(); };
+    roomTabs.appendChild(btn);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-room';
+  addBtn.textContent = '+ Add room';
+  addBtn.onclick = () => {
+    const name = prompt('Room name (e.g. "Hallway Closet")');
+    if(name && name.trim() && !rooms[name.trim()]){
+      rooms[name.trim()] = [];
+      activeRoom = name.trim();
+      renderTabs();
+      renderPhotos();
+    }
+  };
+  roomTabs.appendChild(addBtn);
+}
+
+function renderPhotos(){
+  photoGrid.innerHTML = '';
+  const list = rooms[activeRoom] || [];
+  if(list.length === 0){
+    emptyNote.textContent = 'No photos logged for ' + activeRoom + ' yet.';
+  } else {
+    emptyNote.textContent = '';
+  }
+  list.forEach((photo, idx) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    const img = document.createElement('img');
+    img.src = photo.stampedDataUrl;
+    const stamp = document.createElement('div');
+    stamp.className = 'stamp';
+    stamp.textContent = photo.label;
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '×';
+    del.onclick = () => { list.splice(idx,1); renderTabs(); renderPhotos(); updateSummary(); };
+    card.appendChild(img);
+    card.appendChild(stamp);
+    card.appendChild(del);
+    photoGrid.appendChild(card);
+  });
+  updateSummary();
+}
+
+function updateSummary(){
+  let total = 0;
+  let roomsWithPhotos = 0;
+  Object.values(rooms).forEach(list => {
+    if(list.length) roomsWithPhotos++;
+    total += list.length;
+  });
+  summary.innerHTML = '<strong>' + total + '</strong> photos across <strong>' + roomsWithPhotos + '</strong> rooms logged.';
+  generateBtn.disabled = total === 0;
+}
+
+uploadZone.style.cursor = 'default';
+document.getElementById('takePhotoBtn').addEventListener('click', () => document.getElementById('cameraInput').click());
+document.getElementById('chooseFileBtn').addEventListener('click', () => fileInput.click());
+
+document.getElementById('cameraInput').addEventListener('change', (e) => handleFiles(e.target.files, e.target));
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files, e.target));
+
+async function handleFiles(fileList, inputEl){
+  const files = Array.from(fileList);
+  for(const file of files){
+    const stamped = await stampImage(file);
+    rooms[activeRoom].push(stamped);
+  }
+  inputEl.value = '';
+  renderTabs();
+  renderPhotos();
+}
+
+function stampImage(file){
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const loggedAt = new Date();
+        const dateStr = loggedAt.toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+        const timeStr = loggedAt.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'});
+        const label = 'LOGGED ' + dateStr + ' ' + timeStr;
+
+        const fontSize = Math.max(16, Math.round(canvas.width * 0.028));
+        ctx.font = fontSize + 'px "IBM Plex Mono", monospace';
+        const textWidth = ctx.measureText(label).width;
+        const padX = fontSize * 0.6;
+        const padY = fontSize * 0.5;
+        const boxW = textWidth + padX * 2;
+        const boxH = fontSize + padY * 2;
+        const boxX = canvas.width - boxW - fontSize * 0.6;
+        const boxY = canvas.height - boxH - fontSize * 0.6;
+
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.strokeStyle = '#A13D2B';
+        ctx.lineWidth = Math.max(2, fontSize * 0.08);
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+        ctx.fillStyle = '#7E2E20';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, boxX + padX, boxY + boxH / 2);
+
+        resolve({
+          stampedDataUrl: canvas.toDataURL('image/jpeg', 0.85),
+          label: label,
+          rawTimestamp: loggedAt.toISOString()
+        });
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// --- Unlock / paywall logic ---
+let unlocked = false;
+
+const unlockPanel = document.getElementById('unlockPanel');
+const unlockStatus = document.getElementById('unlockStatus');
+const codeInput = document.getElementById('codeInput');
+const unlockBtn = document.getElementById('unlockBtn');
+const buyLink = document.getElementById('buyLink');
+buyLink.href = PAYMENT_LINK;
+
+// If you use a Stripe Payment Link instead, set its "after payment"
+// redirect to this same page with ?unlocked=true appended, and this will
+// unlock automatically when the buyer lands back here.
+const params = new URLSearchParams(window.location.search);
+if(params.get('unlocked') === 'true'){
+  unlocked = true;
+}
+
+function renderUnlockState(){
+  if(unlocked){
+    unlockPanel.classList.add('is-unlocked');
+    unlockStatus.textContent = 'Unlocked — your report is ready to download.';
+    codeInput.style.display = 'none';
+    unlockBtn.style.display = 'none';
+    buyLink.style.display = 'none';
+  } else {
+    unlockPanel.classList.remove('is-unlocked');
+    unlockStatus.textContent = 'Locked — a one-time $5 unlock is required to download the finished report.';
+  }
+}
+renderUnlockState();
+
+unlockBtn.addEventListener('click', () => {
+  if(codeInput.value.trim().toUpperCase() === ACCESS_CODE){
+    unlocked = true;
+    renderUnlockState();
+  } else {
+    unlockStatus.textContent = 'That code doesn\'t match. Check the email from your purchase and try again.';
+  }
+});
+
+generateBtn.addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'letter'});
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 48;
+
+  const tenant = document.getElementById('tenantName').value || 'Not provided';
+  const address = document.getElementById('address').value || 'Not provided';
+  const reportType = document.getElementById('reportType').value;
+  const reportDate = reportDateInput.value;
+  const fileNumber = fileNo.textContent;
+
+  // Cover page
+  doc.setFont('courier','bold');
+  doc.setFontSize(22);
+  doc.text('MOVE RECORD', margin, 90);
+  doc.setFontSize(13);
+  doc.setFont('courier','normal');
+  doc.text(reportType.toUpperCase() + ' — CONDITION REPORT', margin, 112);
+
+  doc.setDrawColor(31,36,31);
+  doc.setLineWidth(1);
+  doc.line(margin, 130, pageW - margin, 130);
+
+  doc.setFontSize(11);
+  let y = 165;
+  const lineGap = 24;
+  const rows = [
+    ['File No.', fileNumber],
+    ['Tenant', tenant],
+    ['Property address', address],
+    ['Report type', reportType],
+    ['Date generated', reportDate],
+  ];
+  rows.forEach(([label, val]) => {
+    doc.setFont('courier','bold');
+    doc.text(label.toUpperCase() + ':', margin, y);
+    doc.setFont('courier','normal');
+    doc.text(String(val), margin + 150, y);
+    y += lineGap;
+  });
+
+  y += 20;
+  doc.setFont('courier','normal');
+  doc.setFontSize(9.5);
+  const note = 'This report contains dated photographs of each room, logged at the time they were added. Each photo carries a visible timestamp. Keep a copy for your own records and provide one to your landlord or property manager if requested.';
+  const wrapped = doc.splitTextToSize(note, pageW - margin*2);
+  doc.text(wrapped, margin, y);
+
+  let totalPhotos = 0;
+  Object.values(rooms).forEach(l => totalPhotos += l.length);
+  y += wrapped.length * 12 + 20;
+  doc.setFont('courier','bold');
+  doc.text('CONTENTS:', margin, y);
+  doc.setFont('courier','normal');
+  y += lineGap;
+  Object.keys(rooms).forEach(roomName => {
+    const count = rooms[roomName].length;
+    if(count > 0){
+      doc.text('- ' + roomName + ' (' + count + ' photo' + (count===1?'':'s') + ')', margin + 10, y);
+      y += 16;
+    }
+  });
+
+  // Room pages
+  Object.keys(rooms).forEach(roomName => {
+    const photos = rooms[roomName];
+    if(photos.length === 0) return;
+
+    doc.addPage();
+    doc.setFont('courier','bold');
+    doc.setFontSize(15);
+    doc.text(roomName.toUpperCase(), margin, 60);
+    doc.setDrawColor(31,36,31);
+    doc.setLineWidth(0.75);
+    doc.line(margin, 70, pageW - margin, 70);
+
+    const cols = 2;
+    const gap = 16;
+    const cellW = (pageW - margin*2 - gap*(cols-1)) / cols;
+    const cellH = cellW * 0.72;
+    let col = 0;
+    let rowY = 90;
+
+    photos.forEach((photo) => {
+      if(rowY + cellH + 30 > pageH - margin){
+        doc.addPage();
+        doc.setFont('courier','bold');
+        doc.setFontSize(12);
+        doc.text(roomName.toUpperCase() + ' (continued)', margin, 40);
+        rowY = 60;
+        col = 0;
+      }
+      const x = margin + col * (cellW + gap);
+      doc.setDrawColor(180,180,180);
+      doc.rect(x, rowY, cellW, cellH);
+      try{
+        doc.addImage(photo.stampedDataUrl, 'JPEG', x, rowY, cellW, cellH);
+      }catch(e){}
+      doc.setFont('courier','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(80,80,80);
+      doc.text(photo.label, x, rowY + cellH + 12);
+      doc.setTextColor(0,0,0);
+
+      col++;
+      if(col >= cols){
+        col = 0;
+        rowY += cellH + 34;
+      }
+    });
+  });
+
+  const safeAddr = (address || 'move-record').replace(/[^a-z0-9]/gi,'_').slice(0,40);
+  doc.save(reportType.replace('-','') + '_' + safeAddr + '.pdf');
+});
+
+renderTabs();
+renderPhotos();
+</script>
+</body>
+</html>
